@@ -18,8 +18,9 @@ if (dummyParent && dummy) {
 }
 
 // Keep the private probe in the current scope; only changed variables invalidate its styles.
+let appliedVariables: UniwindContextType['variables'] | undefined
 const applyScopedVariables = (uniwindContext: UniwindContextType) => {
-    if (!dummyParent) {
+    if (!dummyParent || appliedVariables === uniwindContext.variables) {
         return
     }
 
@@ -43,6 +44,7 @@ const applyScopedVariables = (uniwindContext: UniwindContextType) => {
             style.setProperty(name, next)
         }
     })
+    appliedVariables = uniwindContext.variables
 }
 
 const getActiveStylesForClass = (className: string) => {
@@ -52,16 +54,10 @@ const getActiveStylesForClass = (className: string) => {
         return extractedStyles
     }
 
-    const classNames = className.split(/\s+/).filter(Boolean).map((cls) => `.${CSS.escape(cls)}`)
     const computedStyles = window.getComputedStyle(dummy)
 
-    CSSListener.activeRules.forEach(rule => {
+    CSSListener.getRulesForClassName(className).forEach(rule => {
         const selector = rule.selectorText
-        const mightMatch = classNames.some((cls) => selector.includes(cls))
-
-        if (!mightMatch) {
-            return
-        }
 
         // element.matches() throws errors if it sees pseudo-elements like ::before
         // So we strip them out safely just for the matching test

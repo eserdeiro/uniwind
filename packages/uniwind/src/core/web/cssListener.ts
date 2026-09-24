@@ -3,6 +3,7 @@ import { UniwindListener } from '../listener'
 
 class CSSListenerBuilder {
     activeRules = new Set<CSSStyleRule>()
+    private classNameRules = new Map<string, Array<CSSStyleRule>>()
     private classNameMediaQueryListeners = new Map<string, MediaQueryList>()
     private listeners = new Map<MediaQueryList, Set<VoidFunction>>()
     private registeredRulesMediaQueries = new Map<string, MediaQueryList>()
@@ -45,6 +46,21 @@ class CSSListenerBuilder {
             attributes: true,
             attributeFilter: ['disabled', 'media', 'title', 'href', 'rel'],
         })
+    }
+
+    getRulesForClassName(className: string) {
+        const cached = this.classNameRules.get(className)
+
+        if (cached) {
+            return cached
+        }
+
+        const selectors = className.split(/\s+/).filter(Boolean).map(cls => `.${CSS.escape(cls)}`)
+        const rules = Array.from(this.activeRules).filter(rule => selectors.some(cls => rule.selectorText.includes(cls)))
+
+        this.classNameRules.set(className, rules)
+
+        return rules
     }
 
     getSnapshot(classNames: string) {
@@ -122,6 +138,7 @@ class CSSListenerBuilder {
     }
 
     private initialize() {
+        this.classNameRules.clear()
         this.pendingInitialization = undefined
         this.pruneStaleRules()
 
@@ -252,6 +269,7 @@ class CSSListenerBuilder {
     }
 
     private toggleRule(mqList: MediaQueryList, rule: CSSStyleRule) {
+        this.classNameRules.clear()
         if (mqList.matches && this.isRuleLive(rule)) {
             this.activeRules.add(rule)
         } else {
