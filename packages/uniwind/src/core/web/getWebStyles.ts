@@ -27,7 +27,7 @@ const applyScopedVariables = (uniwindContext: UniwindContextType) => {
     const style = dummyParent.style
 
     Array.from(style).forEach(name => {
-        if (name.startsWith('--') && !Object.hasOwn(variables, name)) {
+        if (name.startsWith('--') && !Object.prototype.hasOwnProperty.call(variables, name)) {
             style.removeProperty(name)
         }
     })
