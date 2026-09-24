@@ -1,6 +1,8 @@
 import { StyleDependency } from '../../common/consts'
 import { UniwindListener } from '../listener'
 
+const MAX_CLASS_NAME_CACHE_SIZE = 500
+
 class CSSListenerBuilder {
     activeRules = new Set<CSSStyleRule>()
     private classNameRules = new Map<string, Array<CSSStyleRule>>()
@@ -57,6 +59,10 @@ class CSSListenerBuilder {
 
         const selectors = className.split(/\s+/).filter(Boolean).map(cls => `.${CSS.escape(cls)}`)
         const rules = Array.from(this.activeRules).filter(rule => selectors.some(cls => rule.selectorText.includes(cls)))
+
+        if (this.classNameRules.size >= MAX_CLASS_NAME_CACHE_SIZE) {
+            this.classNameRules.delete(this.classNameRules.keys().next().value!)
+        }
 
         this.classNameRules.set(className, rules)
 
