@@ -54,6 +54,9 @@ class CSSListenerBuilder {
         const cached = this.classNameRules.get(className)
 
         if (cached) {
+            this.classNameRules.delete(className)
+            this.classNameRules.set(className, cached)
+
             return cached
         }
 
