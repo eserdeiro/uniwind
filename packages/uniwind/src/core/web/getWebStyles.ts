@@ -18,9 +18,8 @@ if (dummyParent && dummy) {
 }
 
 // Keep the private probe in the current scope; only changed variables invalidate its styles.
-let appliedVariables: UniwindContextType['variables'] | undefined
 const applyScopedVariables = (uniwindContext: UniwindContextType) => {
-    if (!dummyParent || appliedVariables === uniwindContext.variables) {
+    if (!dummyParent) {
         return
     }
 
@@ -44,7 +43,6 @@ const applyScopedVariables = (uniwindContext: UniwindContextType) => {
             style.setProperty(name, next)
         }
     })
-    appliedVariables = uniwindContext.variables
 }
 
 const getActiveStylesForClass = (className: string) => {
