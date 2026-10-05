@@ -1,4 +1,52 @@
-## What's Changed in 1.12.0
+## What's Changed in 1.12.2
+
+
+
+### 🚀 Features
+* feat: migrate unbuild to tsdown by @Brentlok in [#712](https://github.com/uni-stack/uniwind/pull/712)
+
+
+### 🐛 Bug Fixes
+* fix: notify web listeners when new styles loaded by @Brentlok in [#713](https://github.com/uni-stack/uniwind/pull/713)
+* fix: reset root parser state before sibling rules by @eliotgevers in [#710](https://github.com/uni-stack/uniwind/pull/710)
+* fix: InputAccessoryView circular dependency on web by @Brentlok in [#706](https://github.com/uni-stack/uniwind/pull/706)
+
+
+### 🏠 Chores
+* chore: update deps by @Brentlok in [#707](https://github.com/uni-stack/uniwind/pull/707)
+
+
+### 📦 Other
+* Revert "feat: migrate unbuild to tsdown" by @Brentlok in [#714](https://github.com/uni-stack/uniwind/pull/714)
+
+
+**Full Changelog**: https://github.com/uni-stack/uniwind/compare/v1.12.1...v1.12.2## What's Changed in 1.12.1
+
+
+
+### 🚀 Features
+* feat: support fontVariationSettings and cover textAlign start/end by @jpudysz in [#699](https://github.com/uni-stack/uniwind/pull/699)
+
+
+### 🐛 Bug Fixes
+* fix: add Metro main/react-native fallbacks for the root entry by @antoinerousseau in [#683](https://github.com/uni-stack/uniwind/pull/683)
+* fix: resolve aliased uniwind copy when Expo autolinking resolution picks a hoisted one by @jpudysz in [#694](https://github.com/uni-stack/uniwind/pull/694)
+* fix: dont optimize uniwind injected js in expo tree shaking by @Brentlok in [#698](https://github.com/uni-stack/uniwind/pull/698)
+* fix: missing InputAccessoryView on web by @Brentlok in [#697](https://github.com/uni-stack/uniwind/pull/697)
+* fix: reconcile native styles when layout effects reconnect by @eliotgevers in [#690](https://github.com/uni-stack/uniwind/pull/690)
+* fix: resolver skips rewrite when parent directory is react-native by @Brentlok in [#691](https://github.com/uni-stack/uniwind/pull/691)
+* fix: no-types.d.ts not being published by @Brentlok in [#687](https://github.com/uni-stack/uniwind/pull/687)
+* fix: keep media queries for every rule of a block by @juliusmarminge in [#686](https://github.com/uni-stack/uniwind/pull/686)
+* fix: write the uniwind.css artifact atomically by @florian-lefebvre in [#677](https://github.com/uni-stack/uniwind/pull/677)
+* fix: exclusive mq boundaries by @Brentlok in [#681](https://github.com/uni-stack/uniwind/pull/681)
+* fix: remove deprecated Vite customResolver usage by @saseungmin in [#670](https://github.com/uni-stack/uniwind/pull/670)
+
+
+### New Contributors
+* @antoinerousseau made their first contribution in [#683](https://github.com/uni-stack/uniwind/pull/683)
+* @eliotgevers made their first contribution in [#690](https://github.com/uni-stack/uniwind/pull/690)
+* @saseungmin made their first contribution in [#670](https://github.com/uni-stack/uniwind/pull/670)
+**Full Changelog**: https://github.com/uni-stack/uniwind/compare/v1.12.0...v1.12.1## What's Changed in 1.12.0
 
 
 

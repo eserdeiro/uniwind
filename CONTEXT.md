@@ -50,7 +50,7 @@ Public exports from `src/index.ts`:
 
 Package subpath exports:
 
-- `uniwind`: main runtime API.
+- `uniwind`: main runtime API. `package.json` also sets top-level `react-native` (`./src/index.ts`) and `main` (`./dist/common/index.js`), mirroring `exports["."]`, so Metro can still resolve the root entry when it skips `exports` (file-map miss, installer stub, older resolvers). Keep both: without `main` Metro defaults to a non-existent `index`.
 - `uniwind/components`: React Native component replacements.
 - `uniwind/components/*`: individual component replacements.
 - `uniwind/metro`: Metro adapter.
@@ -60,6 +60,8 @@ Package subpath exports:
 Stability policy: public package and subpath exports are semver-stable. Generated artifact internals are implementation details unless explicitly documented, with two notable user-facing surfaces: generated theme typings and the package `style` export (`uniwind.css`).
 
 Dependency policy: peer dependency floors are support contracts. Raising support floors for Tailwind, React, or React Native requires semver-major unless an upstream ecosystem break makes that impossible to honor.
+
+Workspace dependency alignment: the examples share Expo SDK 57's React Native 0.86 and React 19.2 release lines; React Native presets/configs and React's test renderer must stay aligned with those lines. Expo's compatibility check requires React/React DOM 19.2.3 and React 19.2 types. Development uses Node.js 22.13+ (or a supported newer LTS), including Vitest 5. TypeScript stays on 6 until the declaration-build tooling supports TypeScript 7's compiler API changes, and native Testing Library stays on 13 until the tests migrate to the async APIs in 14. Babel stays on 7 while the React Native and Expo presets depend on Babel 7 plugins. Lightning CSS remains pinned to 1.30.1; its existing transitive copies stay locked to 1.32.0, constraining Vite to 8.1.5 until that pin is lifted.
 
 ## Runtime Model
 
@@ -79,7 +81,7 @@ Web runtime:
 
 - Web keeps styles in CSS and passes `{ $$css: true, tailwind: className }` through RNW style arrays.
 - `getWebStyles` uses a hidden DOM element to compute style values when a JS value is needed, such as color extraction or `useResolveClassNames`.
-- `CSSListener` tracks active CSS rules and media queries, then notifies subscribers when class-dependent media rules change. Candidate rules are cached by class string and invalidated when stylesheets are processed or media rules are toggled; computed values and selector matching remain live.
+- `CSSListener` tracks active CSS rules and media queries, then notifies subscribers when class-dependent media rules change. Candidate rules are cached by class string and invalidated when stylesheets are processed or media rules are toggled; computed values and selector matching remain live. After scanning newly discovered stylesheets, it emits a variables notification so JS-resolved styles refresh when CSS arrives after module initialization, including Metro web development startup. Deferred scans safely return if `document` has been removed before they run, such as during test environment teardown.
 - `ScopedTheme` renders a `div` with the theme class and `display: contents` on web.
 - `LayoutDirection` renders a contents-style wrapper with `direction`/`dir` semantics so RTL/LTR variants can be scoped to a subtree.
 - `ScopedVariables` renders a `display: contents` wrapper and sets its variables as inline custom properties on that wrapper, so the real DOM cascade resolves `var(--name)` to the scoped value for every descendant (numbers become px). During JS reads (`getWebVariable` / `useResolveClassNames`) it also applies the variables to the private hidden `dummyParent`. Each read compares variable values against the applied inline properties, including changes made in place to the same variables object. Unchanged values avoid writes; switching scopes removes stale properties and applies changed values.
@@ -124,6 +126,8 @@ Metro integration:
 - Native platform CSS transforms into a JS module that calls `Uniwind.__reinit(...)` with a fingerprint of the generated styles and themes. During development, the native runtime skips reinitialization when that fingerprint is unchanged.
 - Web platform CSS transforms into CSS plus web runtime setup.
 - Resolver swaps React Native component imports to Uniwind-aware implementations where needed.
+- On web, imports originating inside React Native Web keep their original components, preventing cycles through Uniwind wrappers. Animated component imports still receive wrappers, matching the native resolver, and the internal `createOrderedCSSStyleSheet` override remains active. Application and third-party component imports still resolve to styled wrappers.
+- `uniwind` and `uniwind/*` requests resolve from `<projectRoot>/package.json`, so every importer gets the app's copy. If the configured resolver returns a source file outside this package (e.g. Expo autolinking resolution picks a hoisted public `uniwind` while Pro is installed under an alias such as `"uniwind": "npm:uniwind-pro"`), the request is resolved again with Metro's default `metro-resolver`.
 
 Vite integration:
 
@@ -151,6 +155,8 @@ Important concepts:
 - Tailwind composes `filter` from per-utility `--tw-*` variables and relies on `var(--x,)` empty fallbacks for unset parts, so `Var` resolves those to an empty string. Each filter function compiles to `rt.filterFn(name, amount, unit)` because `addMissingSpaces` would otherwise corrupt an inline `blur(${...}px)` template.
 - Filter runtime support is platform-dependent: Android applies filters at the default release level (blur and drop-shadow need API 31+, and one blur in the chain sends the whole chain down that path), while iOS renders blur/grayscale/saturate/contrast/hue-rotate only behind the `enableSwiftUIBasedFilters` React Native feature flag — experimental in RN 0.83-0.86, canary in 0.87, absent before 0.83.
 - `backdrop-filter` has no RN equivalent and is still dropped.
+- `text-align: start/end` passes through as `textAlign`; RN resolves `end` from 0.87 (older versions fall back to natural alignment).
+- `font-variation-settings` maps to `fontVariationSettings` with axis tags re-quoted at runtime once variables resolve (`'wght' 650`), which RN applies from 0.88; unquoted tags are rejected on both iOS and Android.
 
 Web visitor behavior:
 
@@ -173,6 +179,7 @@ Web components:
 - Web wrappers import from `react-native` as resolved by bundler aliases.
 - Web wrappers map `className` to RNW CSS style markers through `toRNWClassName`.
 - Web wrappers pass generated `dataSet` so data attribute variants can match.
+- `InputAccessoryView` wraps React Native Web's export when available (0.21.3+) and uses `View` with older React Native Web versions, while supporting Uniwind classes and data attributes.
 
 `withUniwind`:
 
@@ -196,12 +203,18 @@ Package scripts:
 
 Root scripts use Turbo for monorepo-wide build, typecheck, lint, test, format, and circular checks.
 
+The release workflow runs the build, type checks, lint, formatting, circular dependency checks, and all test suites before releasing. It uses release-it to bump the version and generate the changelog, then follows release-it's default order: publish to npm, push the release commit/tag, and create the GitHub release. Husky is disabled for the release commit because the workflow has already run the checks. The package's release-it configuration controls npm provenance, public access, and prerelease tags. Dry runs use release-it's `--dry-run`, and pending release issues are closed only after the full release succeeds.
+
 Testing layout:
 
 - `tests/native`: component behavior and native style parsing.
 - `tests/web`: web config, components, and HOC behavior.
 - `tests/type-test`: public type expectations.
 - `tests/e2e`: browser checks for web style extraction and generated artifacts.
+
+Native test setup disables Node's optional `module.register` and `module.registerHooks` before importing Tailwind. Jest 30 cannot run these loader hooks in its module sandbox; Tailwind uses its normal module-loading path when the hooks are unavailable.
+
+The bare example's React Native CLI uses Metro 0.84 internally. The Metro development dependency stays on 0.85 until that CLI is upgraded: Metro 0.86/0.87 transformer workers emit full source maps that the older CLI serializer cannot consume. Metro dependency upgrades must pass the bare production bundle checks.
 
 Source-of-truth policy: repository code and tests win for implementation details. External docs at `docs.uniwind.dev` describe intended public behavior and should be updated when public behavior changes.
 
